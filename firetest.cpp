@@ -32,6 +32,38 @@ int printStatus(const IStatus* status)
   return status->isSuccess();
 }
 
+int initDPB(int16_t page_size, char *dpb)
+{
+  int i=0;
+  dpb[i++] = isc_dpb_version1;
+  
+  dpb[i++] = isc_dpb_sql_dialect;
+  dpb[i++] = (char)1;
+  dpb[i++] = (char)3;
+  
+  dpb[i++] = isc_dpb_page_size;
+  dpb[i++] = (char)2;
+  *(int16_t*)&dpb[i] = int16_t((isc_vax_integer)((char *)&page_size, 2));
+  i += 2;   
+      
+  dpb[i++] = isc_dpb_set_db_charset;
+  dpb[i++] = (char)4;
+  strncpy(&(dpb[i]), "UTF8", 4);
+  i += 4;
+  
+  dpb[i++] = isc_dpb_user_name;
+  dpb[i++] = (char)6;
+  strncpy(&(dpb[i]), "SYSDBA", 6);
+  i += 6;
+  
+  dpb[i++] = isc_dpb_password;
+  dpb[i++] = (char)9;
+  strncpy(&(dpb[i]), "masterkey", 9);  
+  i += 9;	
+  
+  return i;
+}
+
 int main()
 {
   cout << "FireTest - Playing with the new Firebird 3.0 OOAPI\n";
@@ -49,22 +81,13 @@ int main()
   cout << "Status version is " << status->getVersion() << "\n";
   cout << "Before Init "; printStatus(status);
   status->init();
-  cout << "After Init "; printStatus(status);
-   
-  char dpb[48];
-  int i=0;
-  dpb[i++] = isc_dpb_version1;
-  dpb[i++] = isc_dpb_user_name;
-  dpb[i++] = (char)6;
-  strncpy(&(dpb[i]), "SYSDBA", 6);
-  i += 6;
-  dpb[i++] = isc_dpb_password;
-  dpb[i++] = (char)9;
-  strncpy(&(dpb[i]), "masterkey", 9);  
-  i += 9;
+  cout << "After Init "; printStatus(status);   
+     
+  unsigned char dpb[48];
+  int dpb_len = initDPB(8192, (char *)&dpb);
      
   cout << "Create Database\n";
-  IAttachment* attachment = provider->createDatabase(status, "localhost:/tmp/test.fb3", i, reinterpret_cast<const unsigned char*>(dpb));
+  IAttachment* attachment = provider->createDatabase(status, "localhost:/tmp/test.fb3", dpb_len, (unsigned char *)&dpb);
   if (printStatus(status))
   {
     cout << "Drop Database\n";
