@@ -1,2 +1,5 @@
 firetest
 firetest.o
+/nbproject/private/
+/dist/Debug/
+/build/
